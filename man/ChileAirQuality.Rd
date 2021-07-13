@@ -13,15 +13,20 @@ ChileAirQuality(
   fechadeInicio,
   fechadeTermino,
   Site = FALSE,
-  Curar = TRUE
+  Curar = TRUE,
+  st = FALSE
 )
 }
 \arguments{
 \item{Comunas}{data vector containing the names or codes of the monitoring
-stations. Available stations: "P. O'Higgins", "Cerrillos 1",
- "Cerrillos", "Cerro Navia", "El Bosque", "Independecia", "La Florida",
-  "Las Condes", "Pudahuel", "Puente Alto "," Quilicura "," Quilicura 1 ",
-  " Coyhaique I "," Coyhaique II ". To see the full list of stations use ChileAirQuality()}
+stations. Available stations: "P. O'Higgins","Cerrillos 1","Cerrillos","Cerro Navia",
+"El Bosque","Independecia","La Florida","Las Condes","Pudahuel","Puente Alto","Quilicura",
+"Quilicura 1","Alto Hospicio","Arica","Las Encinas Temuco","Nielol Temuco",
+"Museo Ferroviario Temuco","Padre Las Casas I","Padre Las Casas II","La Union",
+"CESFAM Lago Ranco","Mafil","Fundo La Ribera","Vivero Los Castanos","Valdivia I",
+"Valdivia II","Osorno","Entre Lagos","Alerce","Mirasol","Trapen Norte","Trapen Sur",
+"Puerto Varas","Coyhaique I","Coyhaique II","Punta Arenas".
+ To see the full list of stations use ChileAirQuality()}
 
 \item{Parametros}{data vector containing the names of the air quality parameters.
 Available parameters: "PM10", "PM25", "CO","SO2", "NOX", "NO2", "NO", "O3",
@@ -37,6 +42,8 @@ station in the variable "Comunas"}
 
 \item{Curar}{logical value that activates data curation for particulate matter,
 nitrogen oxides, relative humidity and wind direction.}
+
+\item{st}{logical value that includes validation reports from S.I.N.C.A. "NV": No validated, "PV": Pre-validated, "V": Validated.}
 }
 \value{
 A data frame with air quality data.

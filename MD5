@@ -1,9 +1,9 @@
-3b42e4856da0220911b65a619491ec7c *DESCRIPTION
+56dddb47b22e16373b1bf3b0134e7aea *DESCRIPTION
 7c09bec119cd1569fa0327e38e2b61f9 *NAMESPACE
-c675bb68fced24951569bf8de39c3168 *R/ChileAirQuality.R
+f67f5d6f04acc8f0969866c74cefaf5a *R/ChileAirQuality.R
 63bbb49846c72c393be595732e09fdd7 *R/ChileClimateData.R
-8cda85e5897226ac0143099963d9ca1b *README.md
+11e36e144cc6bb1d26f430daad28de2e *README.md
 fe82b8cfd53edf0e36eed1ea1622a74a *inst/extdata/Estaciones.csv
 db04f79c225b082dd2200115a4db17ff *inst/extdata/SINCA.csv
-f2e42034615d1247c4f4b0d1969e6fb7 *man/ChileAirQuality.Rd
+3fabab17ad6af2ff2bc8a0610098e262 *man/ChileAirQuality.Rd
 b101979dd4ad2493c703669315632e96 *man/ChileClimateData.Rd

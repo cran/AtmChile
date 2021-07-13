@@ -1,10 +1,17 @@
 # AtmChile
 R package that allows compiling information on air quality parameters and meteorological parameters of Chile from the sites of the National Air Quality System (SINCA) dependent on the Ministry of the Environment and the Meteorological Directorate of Chile (DMC) dependent on the Directorate General of Aeronautic.
 
+Project developed by the Department of Chemistry, Faculty of Sciences of the University of Chile. FONDECYT Project 1200674.
+
 **Installation from GitHub:**
 
         library(devtools)
         install_github("franciscoxaxo/AtmChile")
+        
+
+**Installation from CRAN:**
+
+        install.packages("AtmChile")
         
 **Usage:**
 
@@ -93,6 +100,8 @@ N° |Code      |Latitude    |Longitude    |Estation                  | Ad. divis
 **Curar:** logical value that activates data curation for particulate matter, nitrogen oxides, relative humidity and wind direction. Default value: TRUE.
 
 **Site:** logical value that allows entering the code of the monitoring station in the variable "Comunas". Default value: FALSE.
+
+**st:** logical value that includes validation reports from S.I.N.C.A. "NV": No validated, "PV": Pre-validated and "V": Validated. Default value: FALSE.
 
 ### Examples:
 
