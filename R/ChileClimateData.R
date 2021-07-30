@@ -23,19 +23,19 @@
 #' try({
 #' head(ChileClimateData(Estaciones = "180005",
 #'  Parametros = c("Temperatura", "Humedad"),
-#'   inicio = "2020", fin = "2021"))
+#'   inicio = "2020", fin = "2020"))
 #' }, silent = TRUE)
 #'
 #' try({
-#' ChileClimateData(Estaciones = "II",
+#' head(ChileClimateData(Estaciones = "II",
 #'  Parametros = "Temperatura", inicio = "2020",
-#'   fin = "2021", Region = TRUE)
+#'   fin = "2020", Region = TRUE))
 #' }, silent = TRUE)
 
 ChileClimateData <- function(Estaciones = "INFO", Parametros, inicio, fin, Region = FALSE){
 
   #Find csv file location with list of monitoring stations
-  sysEstaciones   <- system.file("extdata", "Estaciones.csv", package = "climateandquality")
+  sysEstaciones   <- system.file("extdata", "Estaciones.csv", package = "AtmChile")
   #Data frame with monitoring stations
   tablaEstaciones <- read.csv(sysEstaciones, sep = "," , dec =".", encoding = "UTF-8")
   # input "INFO" to request information from monitoring station

@@ -39,7 +39,7 @@
 #' try({
 #' ChileAirQuality(Comunas = c("EB", "SA"),
 #' Parametros = "PM10", fechadeInicio = "01/01/2020",
-#' fechadeTermino = "01/01/2021", Site = TRUE)
+#' fechadeTermino = "01/03/2020", Site = TRUE)
 #' }, silent = TRUE)
 #'
 
@@ -47,7 +47,7 @@
 
 ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechadeTermino, Site = FALSE, Curar = TRUE, st = FALSE){
   #Find csv file location with list of monitoring stations
-  sysEstaciones   <- system.file("extdata", "SINCA.CSV", package = "climateandquality")
+  sysEstaciones   <- system.file("extdata", "SINCA.CSV", package = "AtmChile")
   #Data frame with monitoring stations
   estationMatrix <- read.csv(sysEstaciones, sep = ",", dec =".", encoding = "UTF-8")
 
@@ -214,9 +214,6 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                           data <- data.frame(data,s.PM25)
 
                         }
-
-
-
                         # Control mechanism: if the file is not found, it generates an empty column
                         if(length(PM25) == 0){PM25 <- rep("",horas + 1)}
                         # Incorporate the column into the station data frame
@@ -713,56 +710,23 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
         data_total[[i]] <- as.numeric(data_total[[i]])
       }
     }else{
-      data_total[[3]] <- as.numeric(data_total[[3]])
-      data_total[[4]] <- as.numeric(data_total[[4]])
-
-      try({
-        data_total$PM10 <- as.numeric(data_total$PM10)
-      }, silent = TRUE)
-
-      try({
-        data_total$PM25 <- as.numeric(data_total$PM25)
-      }, silent = TRUE)
-
-      try({
-        data_total$O3 <- as.numeric(data_total$O3)
-
-      }, silent = TRUE)
-        data_total$CO <- as.numeric(data_total$CO)
-
-      try({
-        data_total$NO <- as.numeric(data_total$NO)
-
-      }, silent = TRUE)
-        data_total$NO2 <- as.numeric(data_total$NO2)
-
-      try({
-        data_total$NOX <- as.numeric(data_total$NOX)
-
-      }, silent = TRUE)
-        data_total$SO2 <- as.numeric(data_total$SO2)
-
-      try({
-        data_total$temp <- as.numeric(data_total$temp)
-
-      }, silent = TRUE)
-        data_total$HR <- as.numeric(data_total$HR)
-
-      try({
-        data_total$wd <- as.numeric(data_total$wd)
-
-      }, silent = TRUE)
-
-      try({
-        data_total$ws <- as.numeric(data_total$ws)
-
-      }, silent = TRUE)
-
-      try({
-        data_total$PM10 <- as.numeric(data_total$PM10)
-
-      }, silent = TRUE)
-
+      for(i in 3:ncol(data_total)){
+        val <- TRUE
+        j <- 1
+        while(val){
+          if(data_total[j, i] == ""){
+            j <- j + 1
+            if(j > nrow(data_total)){
+              val <- FALSE
+            }
+          }else if(data_total[j, i] != "NV" & data_total[j, i] != "PV" & data_total[j, i] != "V"){
+            data_total[[i]] <- as.numeric(data_total[[i]])
+            val <- FALSE
+          }else if(data_total[j, i] == "NV" | data_total[j, i] == "PV" | data_total[j, i] == "V"){
+            val <- FALSE
+          }
+        }
+      }
     }
     #print final success message
     print("Datos Capturados!")

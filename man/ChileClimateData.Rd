@@ -35,12 +35,12 @@ try({ChileClimateData()}, silent = TRUE)
 try({
 head(ChileClimateData(Estaciones = "180005",
  Parametros = c("Temperatura", "Humedad"),
-  inicio = "2020", fin = "2021"))
+  inicio = "2020", fin = "2020"))
 }, silent = TRUE)
 
 try({
-ChileClimateData(Estaciones = "II",
+head(ChileClimateData(Estaciones = "II",
  Parametros = "Temperatura", inicio = "2020",
-  fin = "2021", Region = TRUE)
+  fin = "2020", Region = TRUE))
 }, silent = TRUE)
 }
