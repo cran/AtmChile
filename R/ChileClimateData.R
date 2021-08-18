@@ -21,9 +21,9 @@
 #' try({ChileClimateData()}, silent = TRUE)
 #'
 #' try({
-#' head(ChileClimateData(Estaciones = "180005",
+#' data <- ChileClimateData(Estaciones = "180005",
 #'  Parametros = c("Temperatura", "Humedad"),
-#'   inicio = "2020", fin = "2020"))
+#'   inicio = "2020", fin = "2020")
 #' }, silent = TRUE)
 #'
 #' try({
@@ -49,7 +49,7 @@ ChileClimateData <- function(Estaciones = "INFO", Parametros, inicio, fin, Regio
     stop("Verificar fechas de inicio y fin")
   }
   #url part 1: Protocol, subdomain, domain and directory
-  url1 <- "https://climatologia.meteochile.gob.cl/application/productos/gethistoricos/"
+  url1 <- "https://climatologia.meteochile.gob.cl/application/datos/getDatosSaclim/"
   #list of parameters to compare:
   parametros_list <- c("Temperatura", "PuntoRocio", "Humedad",
                        "Viento", "PresionQFE", "PresionQFF")

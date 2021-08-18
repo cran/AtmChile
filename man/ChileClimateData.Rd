@@ -33,9 +33,9 @@ function that compiles climate data from Climate direction of Chile (D.M.C.)
 try({ChileClimateData()}, silent = TRUE)
 
 try({
-head(ChileClimateData(Estaciones = "180005",
+data <- ChileClimateData(Estaciones = "180005",
  Parametros = c("Temperatura", "Humedad"),
-  inicio = "2020", fin = "2020"))
+  inicio = "2020", fin = "2020")
 }, silent = TRUE)
 
 try({

@@ -64,9 +64,9 @@ data <- ChileAirQuality(Comunas = "El Bosque",
 }, silent =TRUE)
 
 try({
-ChileAirQuality(Comunas = c("EB", "SA"),
+head(ChileAirQuality(Comunas = c("EB", "SA"),
 Parametros = "PM10", fechadeInicio = "01/01/2020",
-fechadeTermino = "01/03/2020", Site = TRUE)
+fechadeTermino = "01/03/2020", Site = TRUE))
 }, silent = TRUE)
 
 }

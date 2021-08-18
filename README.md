@@ -1,3 +1,6 @@
+
+[![](https://www.r-pkg.org/badges/version/AtmChile?color=green)](https://cran.r-project.org/package=AtmChile)
+
 # AtmChile
 R package that allows compiling information on air quality parameters and meteorological parameters of Chile from the sites of the National Air Quality System (SINCA) dependent on the Ministry of the Environment and the Meteorological Directorate of Chile (DMC) dependent on the Directorate General of Aeronautic.
 
@@ -113,7 +116,10 @@ N° |Code      |Latitude    |Longitude    |Estation                  | Ad. divis
 
         ChileAirQuality(Comunas = c("SA", "CE"), Parametros = c("NO2", "O3"), fechadeInicio = "01/01/2020,", fechadeTermino = "01/01/2021", Curar = FALSE, Site = TRUE)
         
+#### Example 3:
 
+        ChileAirQuality(Comunas = c("SA", "CE"), Parametros = c("NO2", "O3"), fechadeInicio = "01/01/2020,", fechadeTermino = "01/01/2021", Curar = FALSE, Site = TRUE, st = TRUE)
+        
 
 ## ChileClimateData
 
@@ -199,5 +205,12 @@ N.  | National Code     |                               Name     | Latitude   |L
         ChileClimateData(Estaciones = "II", Parametros = "Temperatura", inicio = "2020", fin = "2021", Region = TRUE)
         
 
+## ChileAirQualityApp
 
+ChileAirQualityApp is a dashboard that allows you to use the data download functions of this package enhanced with analysis, visualization and descriptive statistics tools.
 
+        ChileAirQualityApp()
+
+This dashboard is also hosted online on shinyapps.io:
+
+[ChileAirQualityApp](https://chileairquality.shinyapps.io/chileairquality/ "ChileAirQualityApp")
