@@ -8,7 +8,13 @@ attach(e)
 ui <-fluidPage(
   ################################### HEAD #####################################
 
-    tags$head(HTML("<title>ChileAirQuality Proyect</title>")),
+    HTML("<head>
+                    <title>ChileAirQuality Proyect</title>
+                    <link rel='shortcut icon' href='ico.png'>
+                    <meta name='robots' content='ChileAirQuality Web App' />
+                    <meta name='description' content='Aplicación web para facilitar el estudio de la calidad del aire en Chile' />
+          </head>
+                   "),
 
     ################################# CALIDAD DEL AIRE TAB######################
 
@@ -21,14 +27,14 @@ ui <-fluidPage(
                                dateInput("Fecha_inicio",
                                          label ="Fecha de inicio",
                                          value = Sys.Date()-1,
-                                         min = "2005-01-01",
+                                         min = "1997-01-01",
                                          max= Sys.Date(),
                                          format= "dd/mm/yyyy"),
                                #Input end date
                                dateInput("Fecha_Termino",
                                          label ="Fecha de Termino",
                                          value = Sys.Date()-1,
-                                         min = ("2005-01-01"),
+                                         min = ("1997-01-01"),
                                          max= Sys.Date(),
                                          format= "dd/mm/yyyy"),
                                #Control option: Curate data
