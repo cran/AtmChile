@@ -134,7 +134,14 @@ ChileClimateData <- function(Estaciones = "INFO", Parametros, inicio, fin, Regio
                     #unzip downloaded file and assing name for the csv file
                     try({
                       #read csv file
-                      CSV<- read.csv(unzip(temp, csvname), sep =  ";", dec = ".", encoding = "UTF-8")
+                      #CSV<- read.csv(unzip(temp, csvname), sep =  ";", dec = ".", encoding = "UTF-8")
+                      CSV<- data.table::fread(unzip(temp, csvname), sep =  ";", dec = ".", encoding = "UTF-8")
+                      if(parametros_list[l] == "Viento"){
+                        names(CSV) <- unlist(strsplit(names(CSV), ","))[1:5]
+                      }else{
+                        names(CSV) <- unlist(strsplit(names(CSV), ","))[-1]
+                      }
+
                     }, silent = T)
                   })
                 }, silent = TRUE)

@@ -269,11 +269,23 @@ ChileClimateData <- function(Estaciones = "INFO", Parametros, inicio, fin, Regio
                   suppressWarnings({
                     unzip(zipfile = filename)
                     try({
-                      CSV <- read.csv(csvname, sep =  ";", dec = ".", encoding = "UTF-8")
+                      #CSV <- read.csv(csvname, sep =  ";", dec = ".", encoding = "UTF-8")
+                      CSV <- data.table::fread(csvname, sep =  ";", dec = ".", encoding = "UTF-8")
+                      if(parametros_list[l] == "Viento"){
+                        names(CSV) <- unlist(strsplit(names(CSV), ","))[1:5]
+
+                      }else{
+                        names(CSV) <- unlist(strsplit(names(CSV), ","))[-1]
+                      }
+                      CSV<-as.data.frame(CSV)
+
+
+
                     }, silent = T)
                   })
 
                 }, silent = TRUE)
+                print(head(CSV))
                 if(is.null(CSV)| length(CSV) == 0){
                   momento1 <- as.POSIXct(strptime(paste("01-01-", intervalo[m], "00:00:00", sep =""), format = "%d-%m-%Y %H:%M:%S"))
                   momento2 <- as.POSIXct(strptime(paste("31-12-", intervalo[m], "23:00:00", sep =""), format = "%d-%m-%Y %H:%M:%S"))
