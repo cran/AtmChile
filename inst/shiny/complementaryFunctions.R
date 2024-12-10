@@ -355,6 +355,7 @@ ChileClimateData <- function(Estaciones = "INFO", Parametros, inicio, fin, Regio
 
 ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechadeTermino, Site = FALSE, Curar = TRUE){
 
+
   estationMatrix <- data.frame(
     "Ciudad"   = c("SA","CE1","CE","CN","EB","IN","LF","LC","PU","PA","QU","QU1","AH","AR","TE","TEII",
                    "TEIII","PLCI","PLCII","LU","LR","MAI","MAII","MAIII","VA","VAII","OS","OSII","PMI",
@@ -391,32 +392,42 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
 
   )
 
-  if(Comunas[1] == "INFO"){ #"INFO" para solicitar informacion de estaciones de monitoreo
+  if(any(tolower(Parametros) =="all")){Parametros = c("PM10", "PM25", "CO","SO2", 
+                                                 "NOX", "NO2", "NO", "O3", "temp",
+                                                 "RH" , "ws", "wd")}
+  
+  if (any(tolower(Comunas) == "all")) {
+    Comunas <- estationMatrix[[1]]  # Extrae la primera columna como vector
+    Site <- TRUE
+  }
+  
+  
+  if(any(Comunas == "info")){ #"INFO" para solicitar informacion de estaciones de monitoreo
     return((estationMatrix)) #Retorna matriz de estaciones
   }else{
-
-    fi <- paste(fechadeInicio,"1:00") #incluir hora en fecha de inicio
-    ft <- paste(fechadeTermino,"23:00") # incluir hora en fecha de termino
-    Fecha_inicio <- as.POSIXct(strptime(fi, format = "%d/%m/%Y %H:%M")) #Asignar formato de fecha de termino
-    Fecha_termino<- as.POSIXct(strptime(ft, format = "%d/%m/%Y %H:%M")) #Asignar formato de fecha de termino
-
-    #Fechas para arana#
-    Fecha_inicio_para_arana <- as.character(Fecha_inicio, format("%y%m%d")) #formato fecha inicio para el enrutador
-    Fecha_termino_para_arana <-  as.character(Fecha_termino, format("%y%m%d")) #formato fecha termino para el enrutador
-    id_fecha <- gsub(" ","",paste("from=", Fecha_inicio_para_arana, "&to=", Fecha_termino_para_arana)) #codigo de intervalo de fechas para enrutador
-    horas <- (as.numeric(Fecha_termino)/3600-as.numeric(Fecha_inicio)/3600) #horas entre fechas
-
-
-    urlSinca  <- "https://sinca.mma.gob.cl/cgi-bin/APUB-MMA/apub.tsindico2.cgi?outtype=xcl&macro=./" #parte inicial url de extraccion
-    urlSinca2 <- "&path=/usr/airviro/data/CONAMA/&lang=esp&rsrc=&macropath=" #parte final de ur de extraccion
-
-    #Data frame vacio#
+    
+    # Convertir fechas de inicio y término a formato POSIXct
+    Fecha_inicio <- as.POSIXct(strptime(paste(fechadeInicio,"1:00"), format = "%d/%m/%Y %H:%M"))
+    #End date format
+    Fecha_termino<- as.POSIXct(strptime(paste(fechadeTermino,"23:00"), format = "%d/%m/%Y %H:%M"))
+    
+    
+    # Generar código de fecha para URL
+    id_fecha <- gsub(" ","",paste("from=", as.character(format(Fecha_inicio, "%y%m%d")), 
+                                  "&to=", as.character(format(Fecha_termino, "%y%m%d"))))    
+    # Calcular las horas entre las fechas
+    horas <- as.numeric(difftime(Fecha_termino, Fecha_inicio, units = "hours"))
+    
+    # Parte inicial y final de la URL
+    urlSinca  <- "https://sinca.mma.gob.cl/cgi-bin/APUB-MMA/apub.tsindico2.cgi?outtype=xcl&macro=./"
+    urlSinca2 <- "&path=/usr/airviro/data/CONAMA/&lang=esp&rsrc=&macropath="
+    
+    # Data frame vacío
     date = NULL
     date <- seq(Fecha_inicio, Fecha_termino, by = "hour")
     date <- format(date, format = "%d/%m/%Y %H:%M")
-    data <- data.frame(date)#Parche que evita un ERROR
-    data_total <- data.frame() #Data frame Vacio
-
+    data <- data.frame(date) # Parche que evita un ERROR
+    data_total <- data.frame() # Data frame vacío
 
     for (i in 1:length(Comunas)) {
       try({
@@ -445,8 +456,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                 {
                   inParametro <-  Parametros[p] #Asignar contaminante a variable
 
-                  if(inParametro == "PM10" |inParametro == "pm10" |
-                     inParametro == "pM10" |inParametro == "Pm10")
+                  if(tolower(inParametro) == "pm10" )
                   {
                     codParametro <- "/Cal/PM10//PM10.horario.horario.ic&" #Codigo especifico para PM10
                     url <- gsub(" ", "",paste(urlSinca, mCod, codParametro, id_fecha, urlSinca2)) #Generar URL
@@ -463,8 +473,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                       }
                       ,silent = T)
 
-                  } else if(inParametro == "PM25" |inParametro == "pm25" |
-                            inParametro == "pM25" |inParametro == "Pm25")
+                  } else if(tolower(inParametro) == "pm25" )
                   {
                     codParametro <- "/Cal/PM25//PM25.horario.horario.ic&" #Codigo especifico PM25
                     url <- gsub(" ", "",paste(urlSinca,
@@ -482,7 +491,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                         print(paste(inParametro, inEstation)) #Mensaje de exito
                       }
                       , silent = TRUE)
-                  } else if(inParametro == "O3")
+                  } else if(tolower(inParametro) == "o3")
                   {
                     codParametro <- "/Cal/0008//0008.horario.horario.ic&" #Codigo url Ozono
                     url <- gsub(" ", "",paste(urlSinca, mCod, codParametro,
@@ -499,8 +508,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                         print(paste(inParametro,inEstation))
                       }
                       , silent = TRUE)
-                  } else if(inParametro == "CO"| inParametro == "co"|
-                            inParametro == "Co"| inParametro == "cO")
+                  } else if(tolower(inParametro) == "co")
                   {
                     codParametro <- "/Cal/0004//0004.horario.horario.ic&" #Codigo CO
                     url <- gsub(" ", "",paste(urlSinca, mCod, codParametro,
@@ -517,8 +525,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                         print(paste(inParametro, inEstation)) #mensaje de exito
                       }
                       , silent = TRUE)
-                  } else if(inParametro == "NO"| inParametro == "no"|
-                            inParametro == "No"| inParametro == "nO")
+                  } else if(tolower(inParametro) == "no")
                   {
                     codParametro <- "/Cal/0002//0002.horario.horario.ic&" #codigo monoxido de carbono
                     url <- gsub(" ", "",paste(urlSinca, mCod, codParametro,
@@ -535,8 +542,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                         print(paste(inParametro, inEstation)) #mensaje de exito
                       }
                       ,silent = T)
-                  }else if(inParametro == "NO2"| inParametro == "no2"|
-                            inParametro == "No2"| inParametro == "nO2")
+                  }else if(tolower(inParametro) == "no2")
                   {
                     codParametro <- "/Cal/0003//0003.horario.horario.ic&" #codigo dioxido de nitrogeno
                     url <- gsub(" ", "",paste(urlSinca, mCod, codParametro, id_fecha, urlSinca2))
@@ -552,10 +558,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                         print(paste(inParametro,inEstation))
                       }
                       , silent = TRUE)
-                  }else if(inParametro == "NOX"|inParametro == "NOx"|
-                            inParametro == "nOX"|inParametro == "NoX"|
-                            inParametro == "Nox"|inParametro == "nOx"|
-                            inParametro == "nox"|inParametro == "noX")
+                  }else if(tolower(inParametro) == "nox")
                   {
                     codParametro <- "/Cal/0NOX//0NOX.horario.horario.ic&"
                     url <- gsub(" ", "",paste(urlSinca, mCod, codParametro, id_fecha, urlSinca2))
@@ -571,8 +574,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                         print(paste(inParametro, inEstation))
                       }
                       , silent = TRUE)
-                  }else if(inParametro == "SO2"| inParametro == "so2"|
-                           inParametro == "sO2"| inParametro == "So2")
+                  }else if(tolower(inParametro) == "so2")
                   {
                     codParametro <- "/Cal/0001//0001.horario.horario.ic&"
                     url <- gsub(" ", "",paste(urlSinca, mCod, codParametro, id_fecha, urlSinca2))
@@ -588,10 +590,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                         print(paste(inParametro, inEstation))
                       }
                       , silent = TRUE)
-                  }else if(inParametro == "tEMP" |inParametro == "TeMP"|inParametro == "TEmP" |inParametro == "TEMp"
-                            |inParametro == "TEmp"|inParametro == "TeMp"|inParametro == "TemP"|inParametro == "tEMp"
-                            |inParametro == "tEmP"|inParametro == "teMP"|inParametro == "temp"|inParametro == "TEMP"
-                            |inParametro == "temP"|inParametro == "teMp"|inParametro == "tEmp"|inParametro == "Temp")
+                  }else if(tolower(inParametro) == "temp" )
                   {
                     codParametro <- "/Met/TEMP//horario_000.ic&"
                     url <- gsub(" ", "", paste(urlSinca, mCod, codParametro, id_fecha, urlSinca2))
@@ -605,8 +604,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                         print(paste(inParametro, inEstation))
                       }
                       , silent = TRUE)
-                  } else if(inParametro == "HR"| inParametro == "hr"|
-                            inParametro == "hR"| inParametro == "Hr")
+                  } else if(tolower(inParametro) == "hr")
                   {
                     codParametro <- "/Met/RHUM//horario_000.ic&"
                     url <- gsub(" ", "",paste(urlSinca,
@@ -622,8 +620,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                         print(paste(inParametro,inEstation))
                       }
                       , silent = TRUE)
-                  } else if(inParametro == "wd"| inParametro == "WD"|
-                            inParametro == "Wd"| inParametro == "wD")
+                  } else if(tolower(inParametro) == "wd")
                   {
                     codParametro <- "/Met/WDIR//horario_000_spec.ic&"
                     url <- gsub(" ", "",paste(urlSinca, mCod, codParametro, id_fecha, urlSinca2))
@@ -637,8 +634,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                         print(paste(inParametro,inEstation))
                       }
                       , silent = TRUE)
-                  } else if(inParametro == "ws"| inParametro == "WS"|
-                            inParametro == "Ws"| inParametro == "wS")
+                  } else if(tolower(inParametro) == "ws")
                   {
                     codParametro <- "/Met/WSPD//horario_000.ic&"
                     url <- gsub(" ", "",paste(urlSinca, mCod, codParametro, id_fecha, urlSinca2))

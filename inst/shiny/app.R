@@ -44,7 +44,7 @@ ui <-fluidPage(
                                #Air quality climate factors buttons
                                splitLayout(checkboxGroupInput("F_Climaticos",
                                                               label ="F. Climaticos",
-                                                              choices =c("temp", "HR", "wd","ws"),
+                                                              choices =c("temp", "HR", "wd","ws", "all"),
                                                               selected = c("temp", "HR", "wd","ws")
                                ),
                                #Air quality pollutants buttons
@@ -66,7 +66,7 @@ ui <-fluidPage(
                                                   choices = c("Las Condes","La Florida",
                                                              "Pudahuel","Puente Alto","Quilicura",
                                                              "Quilicura 1", "Coyhaique I",
-                                                             "Coyhaique II")
+                                                             "Coyhaique II", "all")
                                )
                                ),
                                #Action button
@@ -261,20 +261,15 @@ server <- function(input, output) {
   ######################################CALIDAD DEL AIRE TAB####################
 
   #Reactive function for download air quality information from SINCA
-  data_totalAQ<-reactive(
+  data_totalAQ <- reactive({
     ChileAirQuality(
-      Comunas = c(c(input$Comunas1, input$Comunas2)),
+      Comunas = c(input$Comunas1, input$Comunas2),
       Parametros = c(input$Contaminantes, input$F_Climaticos),
-      fechadeInicio = as.character(
-        input$Fecha_inicio,
-        format("%d/%m/%Y")
-      ),
-      fechadeTermino = as.character(
-        input$Fecha_Termino,
-        format("%d/%m/%Y")
-      ),
+      fechadeInicio = format(input$Fecha_inicio, "%d/%m/%Y"),
+      fechadeTermino = format(input$Fecha_Termino, "%d/%m/%Y"),
       Curar = input$validacion
-    ))
+    )
+  })
 
   #Data Table for air quality information
   output$table <- DT::renderDataTable(

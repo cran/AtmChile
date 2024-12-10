@@ -289,11 +289,17 @@ TME| -36.602 | -72.959 | Liceo Polivalente | VIII
 #### Example 3:
 
         ChileAirQuality(Comunas = c("SA", "CE"), Parametros = c("NO2", "O3"), fechadeInicio = "01/01/2020,", fechadeTermino = "01/01/2021", Curar = FALSE, Site = TRUE, st = TRUE)
+
+#### Example 4:
+        
+#### Example 3:
+
+        ChileAirQuality(Comunas = all, Parametros = all, fechadeInicio = "01/01/2020,", fechadeTermino = "01/01/2021", Curar = FALSE, Site = TRUE, st = TRUE)
         
 
 ## ChileClimateData
 
-Function that compiles climate data from Climate direction of Chile ([DMC](http://www.meteochile.gob.cl/ "DMC")).
+Function that compiles climate data from Climate direction of Chile ([DMC](https://www.meteochile.gob.cl/ "DMC")).
 
 The function has available the following climate parameters: Temperature("Temperatura"), dew point("PuntoRocio"), wind direction("Viento"), humidity("Humedad"), Pressure at sea level("PresionQFF") and Pressure at monitoring station level("PresionQFE").
 

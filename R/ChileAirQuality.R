@@ -49,29 +49,33 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
   #Find csv file location with list of monitoring stations
   sysEstaciones   <- system.file("extdata", "SINCA.CSV", package = "AtmChile")
   #Data frame with monitoring stations
+  
+  
+  if(any(tolower(Parametros) =="all")){Parametros = c("PM10", "PM25", "CO","SO2", 
+                                                      "NOX", "NO2", "NO", "O3", "temp",
+                                                      "RH" , "ws", "wd")}
+  
   estationMatrix <- read.csv(sysEstaciones, sep = ",", dec =".", encoding = "UTF-8")
+  
+  if (any(tolower(Comunas) == "all")) {
+    Comunas <- estationMatrix[[1]]  # Extrae la primera columna como vector
+    Site <- TRUE
+  }
+  
 
   # input "INFO" to request information from monitoring stations
-  if(Comunas[1] == "INFO"){
+  if(any(tolower(Comunas) == "info")){
     #Return data frame of stations
     return((estationMatrix))
   }else{
-    ## Format of input values
-    #include start time in start date
-    fi <- paste(fechadeInicio,"1:00")
-    # include end time in end date
-    ft <- paste(fechadeTermino,"23:00")
     #Start date format
-    Fecha_inicio <- as.POSIXct(strptime(fi, format = "%d/%m/%Y %H:%M"))
+    Fecha_inicio <- as.POSIXct(strptime(paste(fechadeInicio,"1:00"), format = "%d/%m/%Y %H:%M"))
     #End date format
-    Fecha_termino<- as.POSIXct(strptime(ft, format = "%d/%m/%Y %H:%M"))
+    Fecha_termino<- as.POSIXct(strptime(paste(fechadeTermino,"23:00"), format = "%d/%m/%Y %H:%M"))
 
-    #Auxiliary start date format
-    Fecha_inicio_para_arana <- as.character(Fecha_inicio, format("%y%m%d"))
-    #Auxiliary end date format
-    Fecha_termino_para_arana <-  as.character(Fecha_termino, format("%y%m%d"))
     #date range code for url
-    id_fecha <- gsub(" ","",paste("from=", Fecha_inicio_para_arana, "&to=", Fecha_termino_para_arana))
+    id_fecha <- gsub(" ","",paste("from=", as.character(format(Fecha_inicio, "%y%m%d")), 
+                                  "&to=", as.character(format(Fecha_termino, "%y%m%d"))))
     #time interval in hours
     horas <- (as.numeric(Fecha_termino)/3600-as.numeric(Fecha_inicio)/3600)
 
@@ -129,8 +133,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                   #Assign "Parametros" to variable
                   inParametro <-  Parametros[p]
                   # If input parameter is PM10, do:
-                  if(inParametro == "PM10" |inParametro == "pm10" |
-                     inParametro == "pM10" |inParametro == "Pm10")
+                  if(tolower(inParametro) == "pm10")
                   {
                     #sub query for the parameter PM10
                     codParametro <- "/Cal/PM10//PM10.horario.horario.ic&"
@@ -140,32 +143,23 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                       {
                         #Download csv file
                         PM10_Bruto <- read.csv(url,dec =",", sep= ";",na.strings= "")
-                        #Join file columns
-                        PM10_col1  <- PM10_Bruto$Registros.validados
-                        PM10_col2  <- PM10_Bruto$Registros.preliminares
-                        PM10_col3  <- PM10_Bruto$Registros.no.validados
-                        PM10 <- gsub("NA","",gsub(" ", "",paste(PM10_col1,PM10_col2,PM10_col3)))
+                        PM10 <- apply(PM10_Bruto[, c("Registros.validados", "Registros.preliminares", "Registros.no.validados")], 1, 
+                                      function(row) gsub("NA", "", paste0(row, collapse = "")))
 
-                        if(st){
-                          s.PM10 <- NULL
-                          for(q in 1:length(PM10)){
-                            if(!is.na(PM10_col1[q])){
-                              s.PM10 <- c(s.PM10, "V")
-                            }else if(!is.na(PM10_col2[q])){
-                              s.PM10 <- c(s.PM10, "PV")
-                            }else{
-                              if(!is.na(PM10_col3[q])){
-                                s.PM10 <- c(s.PM10, "NV")
-                              }else{
-                                s.PM10 <- c(s.PM10, "")
-                              }
-                            }
-                          }
-
-                          if(length(PM10) == 0 & st){s.PM10 <- rep("", horas + 1)}
-                          data <- data.frame(data,s.PM10)
-
+                        if (st) {
+                          s.PM10 <- apply(PM10_Bruto[, c("Registros.validados", "Registros.preliminares", "Registros.no.validados")], 1, 
+                                          function(row) {
+                                            if (!is.na(row[1])) "V" 
+                                            else if (!is.na(row[2])) "PV" 
+                                            else if (!is.na(row[3])) "NV" 
+                                            else ""
+                                          })
+                          
+                          # Asegurar que las longitudes coincidan
+                          if (length(PM10) == 0 && st) s.PM10 <- rep("", horas + 1)
+                          data <- data.frame(data, s.PM10)
                         }
+                        
 
                         # Control mechanism: if the file is not found, it generates an empty column
                         if(length(PM10) == 0){PM10 <- rep("", horas + 1)}
@@ -179,8 +173,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
 
                   }
                   # If input parameter is PM25, do:
-                  else if(inParametro == "PM25" |inParametro == "pm25" |
-                          inParametro == "pM25" |inParametro == "Pm25")
+                  else if(tolower(inParametro) == "pm25")
                   {
                     #sub query for the parameter
                     codParametro <- "/Cal/PM25//PM25.horario.horario.ic&"
@@ -193,31 +186,23 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                         #Download csv file
                         PM25_Bruto <- read.csv(url,dec =",", sep= ";",na.strings= "")
                         # Join columns of files
-                        PM25_col1 <- PM25_Bruto$Registros.validados
-                        PM25_col2 <- PM25_Bruto$Registros.preliminares
-                        PM25_col3 <- PM25_Bruto$Registros.no.validados
-                        PM25 <- gsub("NA","",gsub(" ", "",paste(PM25_col1,PM25_col2,PM25_col3)))
+                        PM25 <- apply(PM25_Bruto[, c("Registros.validados", "Registros.preliminares", "Registros.no.validados")], 1, 
+                                      function(row) gsub("NA", "", paste0(row, collapse = "")))
 
-                        if(st){
-                          s.PM25 <- NULL
-                          for(q in 1:length(PM25)){
-                            if(!is.na(PM25_col1[q])){
-                              s.PM25 <- c(s.PM25, "V")
-                            }else if(!is.na(PM25_col2[q])){
-                              s.PM25 <- c(s.PM25, "PV")
-                            }else{
-                              if(!is.na(PM25_col3[q])){
-                                s.PM25 <- c(s.PM25, "NV")
-                              }
-                              else{
-                                s.PM25 <- c(s.PM25, "")
-                              }
-                            }
-                          }
-
-                          if(length(PM25) == 0 & st){s.PM25 <- rep("", horas + 1)}
-                          data <- data.frame(data,s.PM25)
-
+                        if (st) {
+                          s.PM25 <- apply(PM25_Bruto[, c("Registros.validados",
+                                                         "Registros.preliminares",
+                                                         "Registros.no.validados")], 1, 
+                                          function(row) {
+                                            if (!is.na(row[1])) "V" 
+                                            else if (!is.na(row[2])) "PV" 
+                                            else if (!is.na(row[3])) "NV" 
+                                            else ""
+                                          })
+                          
+                          # Asegurar que las longitudes coincidan
+                          if (length(PM25) == 0 && st) s.PM25 <- rep("", horas + 1)
+                          data <- data.frame(data, s.PM25)
                         }
                         # Control mechanism: if the file is not found, it generates an empty column
                         if(length(PM25) == 0){PM25 <- rep("",horas + 1)}
@@ -229,7 +214,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                       , silent = TRUE)
                   }
                   # If input parameter is Ozone, do:
-                  else if(inParametro == "O3"|inParametro == "o3")
+                  else if(tolower(inParametro) == "o3")
                   {
                     #sub query for the parameter
                     codParametro <- "/Cal/0008//0008.horario.horario.ic&"
@@ -241,32 +226,24 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                         #Download csv file
                         O3_Bruto <- read.csv(url,dec =",", sep= ";",na.strings= "")
                         # Join columns of files
-                        O3_col1 <- O3_Bruto$Registros.validados
-                        O3_col2 <- O3_Bruto$Registros.preliminares
-                        O3_col3 <- O3_Bruto$Registros.no.validados
-                        O3 <- gsub("NA","",gsub(" ", "",paste(O3_col1, O3_col2, O3_col3)))
-
-                        if(st){
-                          s.O3 <- NULL
-                          for(q in 1:length(O3)){
-                            if(!is.na(O3_col1[q])){
-                              s.O3 <- c(s.O3, "V")
-                            }else if(!is.na(O3_col2[q])){
-                              s.O3 <- c(s.O3, "PV")
-                            }else{
-                              if(!is.na(O3_col3[q])){
-                                s.O3 <- c(s.O3, "NV")
-                              }else{
-                                s.O3 <- c(s.O3, "")
-                              }
-                            }
-                          }
-
-                          if(length(O3) == 0 & st){s.O3 <- rep("", horas + 1)}
-                          data <- data.frame(data,s.O3)
-
+                        O3 <- apply(O3_Bruto[, c("Registros.validados", "Registros.preliminares", "Registros.no.validados")], 1, 
+                                      function(row) gsub("NA", "", paste0(row, collapse = "")))
+                        
+                        if (st) {
+                          s.O3 <- apply(O3_Bruto[, c("Registros.validados",
+                                                         "Registros.preliminares",
+                                                         "Registros.no.validados")], 1, 
+                                          function(row) {
+                                            if (!is.na(row[1])) "V" 
+                                            else if (!is.na(row[2])) "PV" 
+                                            else if (!is.na(row[3])) "NV" 
+                                            else ""
+                                          })
+                          
+                          # Asegurar que las longitudes coincidan
+                          if (length(O3) == 0 && st) s.O3 <- rep("", horas + 1)
+                          data <- data.frame(data, s.O3)
                         }
-
                         # Control mechanism: if the file is not found, it generates an empty column
                         if(length(O3) == 0){O3 <- rep("",horas + 1)}
                         # Incorporate the column into the station data frame
@@ -277,8 +254,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                       , silent = TRUE)
                   }
                   # If input parameter is carbon monoxide, do:
-                  else if(inParametro == "CO"| inParametro == "co"|
-                          inParametro == "Co"| inParametro == "cO")
+                  else if( tolower(inParametro) == "co")
                   {
                     # sub query for the parameter
                     codParametro <- "/Cal/0004//0004.horario.horario.ic&"
@@ -287,46 +263,38 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                                               id_fecha, urlSinca2))
                     try(
                       {
-                        #Download CSV file
-                        CO_Bruto <- read.csv(url, dec =",", sep= ";",na.strings = "")
+                        #Download csv file
+                        CO_Bruto <- read.csv(url,dec =",", sep= ";",na.strings= "")
                         # Join columns of files
-                        CO_col1 <- CO_Bruto$Registros.validados
-                        CO_col2 <- CO_Bruto$Registros.preliminares
-                        CO_col3 <- CO_Bruto$Registros.no.validados
-                        CO <- gsub("NA","",gsub(" ", "",paste(CO_col1,CO_col2,CO_col3)))
-
-                        if(st){
-                          s.CO <- NULL
-                          for(q in 1:length(CO)){
-                            if(!is.na(CO_col1[q])){
-                              s.CO <- c(s.CO, "V")
-                            }else if(!is.na(CO_col2[q])){
-                              s.CO <- c(s.CO, "PV")
-                            }else{
-                              if(!is.na(CO_col3[q])){
-                                s.CO <- c(s.CO, "NV")
-                              }else{
-                                s.CO <- c(s.CO, "")
-                              }
-                            }
-                          }
-
-                          if(length(CO) == 0 & st){s.CO <- rep("", horas + 1)}
-                          data <- data.frame(data,s.CO)
-
+                        CO <- apply(CO_Bruto[, c("Registros.validados", "Registros.preliminares", "Registros.no.validados")], 1, 
+                                    function(row) gsub("NA", "", paste0(row, collapse = "")))
+                        
+                        if (st) {
+                          s.CO <- apply(CO_Bruto[, c("Registros.validados",
+                                                     "Registros.preliminares",
+                                                     "Registros.no.validados")], 1, 
+                                        function(row) {
+                                          if (!is.na(row[1])) "V" 
+                                          else if (!is.na(row[2])) "PV" 
+                                          else if (!is.na(row[3])) "NV" 
+                                          else ""
+                                        })
+                          
+                          # Asegurar que las longitudes coincidan
+                          if (length(CO) == 0 && st) s.CO <- rep("", horas + 1)
+                          data <- data.frame(data, s.CO)
                         }
                         # Control mechanism: if the file is not found, it generates an empty column
-                        if(length(O3) == 0){O3 <- rep("",horas + 1)}
+                        if(length(CO) == 0){CO <- rep("",horas + 1)}
                         # Incorporate the column into the station data frame
-                        data <- data.frame(data,CO)
+                        data <- data.frame(data, CO)
                         # Print success message
-                        print(paste(inParametro, inEstation))
+                        print(paste(inParametro,inEstation))
                       }
                       , silent = TRUE)
                   }
                   # If input parameter is nitrogen monoxide, do:
-                  else if(inParametro == "NO"| inParametro == "no"|
-                          inParametro == "No"| inParametro == "nO")
+                  else if(tolower(inParametro) == "no")
                   {
                     # sub query for the parameter
                     codParametro <- "/Cal/0002//0002.horario.horario.ic&"
@@ -335,45 +303,38 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                                               id_fecha, urlSinca2))
                     try(
                       {
-                        #Download CSV file
-                        NO_Bruto <- read.csv(url, dec = ",", sep = ";",na.strings = "")
+                        #Download csv file
+                        NO_Bruto <- read.csv(url,dec =",", sep= ";",na.strings= "")
                         # Join columns of files
-                        NO_col1 <- NO_Bruto$Registros.validados
-                        NO_col2 <- NO_Bruto$Registros.preliminares
-                        NO_col3 <- NO_Bruto$Registros.no.validados
-                        NO <- gsub("NA", "", gsub(" ", "", paste(NO_col1, NO_col2, NO_col3)))
-
-                        if(st){
-                          s.NO <- NULL
-                          for(q in 1:length(NO)){
-                            if(!is.na(NO_col1[q])){
-                              s.NO <- c(s.NO, "V")
-                            }else if(!is.na(NO_col2[q])){
-                              s.NO <- c(s.NO, "PV")
-                            }else if(!is.na(NO_col3[q])){
-                              s.NO <- c(s.NO, "NV")
-                            }else{
-                              s.NO <- c(s.NO, "")
-                            }
-                          }
-
-                          if(length(NO) == 0 & st){s.NO <- rep("", horas + 1)}
-                          data <- data.frame(data,s.NO)
-
+                        NO <- apply(NO_Bruto[, c("Registros.validados", "Registros.preliminares", "Registros.no.validados")], 1, 
+                                    function(row) gsub("NA", "", paste0(row, collapse = "")))
+                        
+                        if (st) {
+                          s.NO <- apply(NO_Bruto[, c("Registros.validados",
+                                                     "Registros.preliminares",
+                                                     "Registros.no.validados")], 1, 
+                                        function(row) {
+                                          if (!is.na(row[1])) "V" 
+                                          else if (!is.na(row[2])) "PV" 
+                                          else if (!is.na(row[3])) "NV" 
+                                          else ""
+                                        })
+                          
+                          # Asegurar que las longitudes coincidan
+                          if (length(NO) == 0 && st) s.NO <- rep("", horas + 1)
+                          data <- data.frame(data, s.NO)
                         }
-
                         # Control mechanism: if the file is not found, it generates an empty column
-                        if(length(NO) == 0){NO <- rep("", horas + 1)}
+                        if(length(NO) == 0){NO <- rep("",horas + 1)}
                         # Incorporate the column into the station data frame
                         data <- data.frame(data, NO)
                         # Print success message
-                        print(paste(inParametro, inEstation))
+                        print(paste(inParametro,inEstation))
                       }
                       ,silent = T)
                   }
                   # If input parameter is nitrogen dioxide, do:
-                  else if(inParametro == "NO2"| inParametro == "no2"|
-                          inParametro == "No2"| inParametro == "nO2")
+                  else if(tolower(inParametro) == "no2")
                   {
                     # sub query for the parameter
                     codParametro <- "/Cal/0003//0003.horario.horario.ic&"
@@ -381,33 +342,27 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                     url <- gsub(" ", "",paste(urlSinca, mCod, codParametro, id_fecha, urlSinca2))
                     try(
                       {
-                        #Download CSV file
-                        NO2_Bruto <- read.csv(url, dec =",", sep= ";", na.strings= "")
+                        #Download csv file
+                        NO2_Bruto <- read.csv(url,dec =",", sep= ";",na.strings= "")
                         # Join columns of files
-                        NO2_col1 <- NO2_Bruto$Registros.validados
-                        NO2_col2 <- NO2_Bruto$Registros.preliminares
-                        NO2_col3 <- NO2_Bruto$Registros.no.validados
-                        NO2 <- gsub("NA","",gsub(" ", "",paste(NO2_col1,NO2_col2,NO2_col3)))
-
-                        if(st){
-                          s.NO2 <- NULL
-                          for(q in 1:length(NO2)){
-                            if(!is.na(NO2_col1[q])){
-                              s.NO2 <- c(s.NO2, "V")
-                            }else if(!is.na(NO2_col2[q])){
-                              s.NO2 <- c(s.NO2, "PV")
-                            }else if(!is.na(NO2_col3[q])){
-                              s.NO2 <- c(s.NO2, "NV")
-                            }else{
-                              s.NO2 <- c(s.NO2, "")
-                            }
-                          }
-
-                          if(length(NO2) == 0 & st){s.NO2 <- rep("", horas + 1)}
-                          data <- data.frame(data,s.NO2)
-
+                        NO2 <- apply(NO2_Bruto[, c("Registros.validados", "Registros.preliminares", "Registros.no.validados")], 1, 
+                                    function(row) gsub("NA", "", paste0(row, collapse = "")))
+                        
+                        if (st) {
+                          s.NO2 <- apply(NO2_Bruto[, c("Registros.validados",
+                                                     "Registros.preliminares",
+                                                     "Registros.no.validados")], 1, 
+                                        function(row) {
+                                          if (!is.na(row[1])) "V" 
+                                          else if (!is.na(row[2])) "PV" 
+                                          else if (!is.na(row[3])) "NV" 
+                                          else ""
+                                        })
+                          
+                          # Asegurar que las longitudes coincidan
+                          if (length(NO2) == 0 && st) s.NO2 <- rep("", horas + 1)
+                          data <- data.frame(data, s.NO2)
                         }
-
                         # Control mechanism: if the file is not found, it generates an empty column
                         if(length(NO2) == 0){NO2 <- rep("",horas + 1)}
                         # Incorporate the column into the station data frame
@@ -418,10 +373,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                       , silent = TRUE)
                   }
                   # If input parameter is nitrogen oxide, do:
-                  else if(inParametro == "NOX"|inParametro == "NOx"|
-                          inParametro == "nOX"|inParametro == "NoX"|
-                          inParametro == "Nox"|inParametro == "nOx"|
-                          inParametro == "nox"|inParametro == "noX")
+                  else if(tolower(inParametro) == "nox")
                   {
                     # sub query for the parameter
                     codParametro <- "/Cal/0NOX//0NOX.horario.horario.ic&"
@@ -429,48 +381,38 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                     url <- gsub(" ", "",paste(urlSinca, mCod, codParametro, id_fecha, urlSinca2))
                     try(
                       {
-                        #Download CSV file
+                        #Download csv file
                         NOX_Bruto <- read.csv(url,dec =",", sep= ";",na.strings= "")
                         # Join columns of files
-                        NOX_col1 <- NOX_Bruto$Registros.validados
-                        NOX_col2 <- NOX_Bruto$Registros.preliminares
-                        NOX_col3 <- NOX_Bruto$Registros.no.validados
-                        NOX <- gsub("NA", "", gsub(" ", "", paste(NOX_col1, NOX_col2, NOX_col3)))
-
-                        if(st){
-                          s.NOX <- NULL
-                          for(q in 1:length(NOX)){
-                            if(!is.na(NOX_col1[q])){
-                              s.NOX <- c(s.NOX, "V")
-                            }else if(!is.na(NOX_col2[q])){
-                              s.NOX <- c(s.NOX, "PV")
-                            }else{
-                              if(!is.na(NOX_col3[q])){
-                                s.NOX <- c(s.NOX, "NV")
-                              }else{
-                                s.NOX <- c(s.NOX, "")
-                              }
-                            }
-                          }
-
-                          if(length(NOX) == 0 & st){s.NOX <- rep("", horas + 1)}
-                          data <- data.frame(data,s.NOX)
-
+                        NOX <- apply(NOX_Bruto[, c("Registros.validados", "Registros.preliminares", "Registros.no.validados")], 1, 
+                                    function(row) gsub("NA", "", paste0(row, collapse = "")))
+                        
+                        if (st) {
+                          s.NOX <- apply(NOX_Bruto[, c("Registros.validados",
+                                                     "Registros.preliminares",
+                                                     "Registros.no.validados")], 1, 
+                                        function(row) {
+                                          if (!is.na(row[1])) "V" 
+                                          else if (!is.na(row[2])) "PV" 
+                                          else if (!is.na(row[3])) "NV" 
+                                          else ""
+                                        })
+                          
+                          # Asegurar que las longitudes coincidan
+                          if (length(NOX) == 0 && st) s.NOX <- rep("", horas + 1)
+                          data <- data.frame(data, s.NOX)
                         }
-
-
                         # Control mechanism: if the file is not found, it generates an empty column
-                        if(length(NOX) == 0){NOX <- rep("", horas + 1)}
+                        if(length(NOX) == 0){NOX <- rep("",horas + 1)}
                         # Incorporate the column into the station data frame
                         data <- data.frame(data, NOX)
                         # Print success message
-                        print(paste(inParametro, inEstation))
+                        print(paste(inParametro,inEstation))
                       }
                       , silent = TRUE)
                   }
                   # If input parameter is sulfur dioxide, do:
-                  else if(inParametro == "SO2"| inParametro == "so2"|
-                          inParametro == "sO2"| inParametro == "So2")
+                  else if(tolower(inParametro) == "so2")
                   {
                     # sub query for the parameter
                     codParametro <- "/Cal/0001//0001.horario.horario.ic&"
@@ -478,35 +420,27 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                     url <- gsub(" ", "",paste(urlSinca, mCod, codParametro, id_fecha, urlSinca2))
                     try(
                       {
-                        #Download CSV file
-                        SO2_Bruto <- read.csv(url, dec =",", sep= ";", na.strings= "")
+                        #Download csv file
+                        SO2_Bruto <- read.csv(url,dec =",", sep= ";",na.strings= "")
                         # Join columns of files
-                        SO2_col1 <- SO2_Bruto$Registros.validados
-                        SO2_col2 <- SO2_Bruto$Registros.preliminares
-                        SO2_col3 <- SO2_Bruto$Registros.no.validados
-                        SO2 <- gsub("NA","",gsub(" ", "",paste(SO2_col1,SO2_col2,SO2_col3)))
-
-                        if(st){
-                          s.SO2 <- NULL
-                          for(q in 1:length(SO2)){
-                            if(!is.na(SO2_col1[q])){
-                              s.SO2 <- c(s.SO2, "V")
-                            }else if(!is.na(SO2_col2[q])){
-                              s.SO2 <- c(s.SO2, "PV")
-                            }else{
-                              if(!is.na(SO2_col3[q])){
-                                s.SO2 <- c(s.SO2, "NV")
-                              }else{
-                                s.SO2 <- c(s.SO2, "")
-                              }
-                            }
-                          }
-
-                          if(length(SO2) == 0 & st){s.SO2 <- rep("", horas + 1)}
-                          data <- data.frame(data,s.SO2)
-
+                        SO2 <- apply(SO2_Bruto[, c("Registros.validados", "Registros.preliminares", "Registros.no.validados")], 1, 
+                                    function(row) gsub("NA", "", paste0(row, collapse = "")))
+                        
+                        if (st) {
+                          s.SO2 <- apply(SO2_Bruto[, c("Registros.validados",
+                                                     "Registros.preliminares",
+                                                     "Registros.no.validados")], 1, 
+                                        function(row) {
+                                          if (!is.na(row[1])) "V" 
+                                          else if (!is.na(row[2])) "PV" 
+                                          else if (!is.na(row[3])) "NV" 
+                                          else ""
+                                        })
+                          
+                          # Asegurar que las longitudes coincidan
+                          if (length(SO2) == 0 && st) s.SO2 <- rep("", horas + 1)
+                          data <- data.frame(data, s.SO2)
                         }
-
                         # Control mechanism: if the file is not found, it generates an empty column
                         if(length(SO2) == 0){SO2 <- rep("",horas + 1)}
                         # Incorporate the column into the station data frame
@@ -517,11 +451,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                       , silent = TRUE)
                   }
                   # If input parameter is temperature, do:
-                  else if(inParametro == "tEMP"  |inParametro == "temperatura"|inParametro == "TeMP"
-                          |inParametro == "TEMp"| inParametro == "Temperatura"|inParametro == "TEmP"
-                          |inParametro == "TEmp"|inParametro == "TeMp"|inParametro == "TemP"|inParametro == "tEMp"
-                          |inParametro == "tEmP"|inParametro == "teMP"|inParametro == "temp"|inParametro == "TEMP"
-                          |inParametro == "temP"|inParametro == "teMp"|inParametro == "tEmp"|inParametro == "Temp")
+                  else if(tolower(inParametro) == "temp")
                   {
                     # sub query for the parameter
                     codParametro <- "/Met/TEMP//horario_000.ic&"
@@ -544,8 +474,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                       , silent = TRUE)
                   }
                   #If input parameter is RH, do:
-                  else if(inParametro == "HR"| inParametro == "hr"|
-                          inParametro == "hR"| inParametro == "Hr")
+                  else if(tolower(inParametro) == "hr")
                   {
                     # sub query for the parameter
                     codParametro <- "/Met/RHUM//horario_000.ic&"
@@ -570,8 +499,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                       , silent = TRUE)
                   }
                   #If input parameter is wind direction, do:
-                  else if(inParametro == "wd"| inParametro == "WD"|
-                          inParametro == "Wd"| inParametro == "wD")
+                  else if(tolower(inParametro) == "wd")
                   {
                     # sub query for the parameter
                     codParametro <- "/Met/WDIR//horario_000_spec.ic&"
@@ -594,8 +522,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                       , silent = TRUE)
                   }
                   #If input parameter is wind speed, do:
-                  else if(inParametro == "ws"| inParametro == "WS"|
-                          inParametro == "Ws"| inParametro == "wS")
+                  else if(tolower(inParametro) == "ws")
                   {
                     # sub query for the parameter
                     codParametro <- "/Met/WSPD//horario_000.ic&"
@@ -621,7 +548,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
                   else
                   {
                     # Print failure message
-                    print(paste("Contaminante",inParametro,"no soportado en el Software")) #Generar mensaje de fracaso
+                    print(paste("Parametro",inParametro,"no soportado en la libreria")) #Generar mensaje de fracaso
                   }
                 }
 
