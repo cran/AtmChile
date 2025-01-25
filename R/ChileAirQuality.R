@@ -51,7 +51,7 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
   #Data frame with monitoring stations
   
   
-  if(any(tolower(Parametros) =="all")){Parametros = c("PM10", "PM25", "CO","SO2", 
+  if(any(tolower(Parametros) =="all")){Parametros <- c("PM10", "PM25", "CO","SO2", 
                                                       "NOX", "NO2", "NO", "O3", "temp",
                                                       "RH" , "ws", "wd")}
   
