@@ -1,3 +1,5 @@
+if(getRversion() >= "2.15.1")  utils::globalVariables(c("date_posix", "momento"))
+
 #' Title ChileClimateData
 #' @description function that compiles climate data from Climate direction of Chile (D.M.C.)
 #' @param Estaciones data vector containing the  codes of the monitoring
@@ -33,201 +35,130 @@
 #' }, silent = TRUE)
 
 ChileClimateData <- function(Estaciones = "INFO", Parametros, inicio, fin, Region = FALSE){
-
-  #Find csv file location with list of monitoring stations
+  
   sysEstaciones   <- system.file("extdata", "Estaciones.csv", package = "AtmChile")
-  #Data frame with monitoring stations
   tablaEstaciones <- read.csv(sysEstaciones, sep = "," , dec =".", encoding = "UTF-8")
-  # input "INFO" to request information from monitoring station
-  if(Estaciones[1] == "INFO"){
-    #Return data frame of stations
-    return(tablaEstaciones)
-  }
-
-  # error message if end year is greater than start year
-  if(fin < inicio){
-    stop("Verificar fechas de inicio y fin")
-  }
-  #url part 1: Protocol, subdomain, domain and directory
-  url1 <- "https://climatologia.meteochile.gob.cl/application/datos/getDatosSaclim/"
-  #list of parameters to compare:
-  parametros_list <- c("Temperatura", "PuntoRocio", "Humedad",
-                       "Viento", "PresionQFE", "PresionQFF")
-  ##Temporarily out of use
-  #temporal <- c("TMinima", "TMaxima", "Agua6Horas", "Agua24Horas")
-  #parametros_list <- c(parametros_list, temporal)
-
-  #date ranges
-  intervalo <- inicio:fin
-  #store input length of Stations:
-  lenInEstaciones <- length(Estaciones)
-  #store input length of parameters:
-  lenInParametros <- length(Parametros)
-  #store internal length of Stations:
-  lenEstaciones   <- nrow(tablaEstaciones)
-  #store internal length of Parameters:
-  lenParametros   <- length(parametros_list)
-  #store internal length of date range:
-  lendate         <- length(intervalo)
-  #input date format:
-  start <- as.POSIXct(strptime(paste("01-01-", inicio, "00:00:00", sep =""), format = "%d-%m-%Y %H:%M:%S"))
-  end <- as.POSIXct(strptime(paste("31-12-", fin, "23:00:00", sep =""), format = "%d-%m-%Y %H:%M:%S"))
-  #Temporarily out of use
-  #horas<-(as.numeric(end)/3600-as.numeric(start)/3600)
-  date = NULL
-  #generate date column
-  date <- seq(start, end, by = "hour")
-  #format date column
-  date <- format(date, format = "%d-%m-%Y %H:%M:%S")
-
-  df    <- NULL
-  df2   <- NULL
-  #generate empty global data frame
-  data_total <- data.frame()
-  ## Control mechanism: If "Region" is true,
-  ##the input parameters will be verified with column 7
-  ##of the matrix (administrative divisions), if false, it will be
-  ##compared with column 1 (Station codes)
-  if(Region == TRUE){
-    r <- 7
-  }else{
-    r <- 1
-  }
-  # Loop input variable "Estacion"
-  for(i in 1:lenInEstaciones){
-    # Loop Station Matrix (station code or ad division)
-    for(j in 1:lenEstaciones){
-      if(Estaciones[i] == tablaEstaciones[j, r]){
-
-        estacion_var <- tablaEstaciones[j, 1]  #Assign station code to variable
-        Latitud     <-  tablaEstaciones[j, 5]  #Assign latitude to variable
-        Longitud    <-  tablaEstaciones[j, 6] #Assign longitude to variable
-        Nombre      <-  rep(tablaEstaciones[j, 4], length(date)) #Generate station name column
-        Latitud     <-  rep(tablaEstaciones[j, 5], length(date)) #Generate latitude column
-        Longitud    <-  rep(tablaEstaciones[j, 6], length(date)) #Generate longitude column
-        data        <-  data.frame(date, Nombre, Latitud, Longitud) #Join data, station name, longitude and latitude in station df
-        setDT(data) #Set station data frame as data table
-        #Loop input variable "Parametros"
-        for(k in 1:lenInParametros){
-          #Loop internal variable "parametros_list"
-          for(l in 1:lenParametros){
-            #Compare input with the internal list
-            if(Parametros[k] == parametros_list[l]){
-              #iterate for each year
-              for(m in 1:lendate){
-                temp  <- tempfile()
-                temp1 <- tempfile()
-                #concatenate url for query
-                url3 <- paste(url1, estacion_var,"_",intervalo[m], "_", parametros_list[l], "_", sep = "")
-                print(url3)
-                #concatenate required zip file name
-                filename <- paste(estacion_var,"_",intervalo[m],"_", parametros_list[l], ".zip", sep = "")
-                #concatenate required csv file name
-                csvname <- paste(estacion_var,"_",intervalo[m],"_", parametros_list[l], "_.csv", sep = "")
-                #clear CSV variable
-                CSV <- NULL
-                try({
-                  #Download zip file
-                  download.file(url3, temp, method = "curl")
-                  #suppress warnings messages
-                  suppressWarnings({
-                    #unzip downloaded file and assing name for the csv file
-                    try({
-                      #read csv file
-                      #CSV<- read.csv(unzip(temp, csvname), sep =  ";", dec = ".", encoding = "UTF-8")
-                      CSV<- data.table::fread(unzip(temp, csvname), sep =  ";", dec = ".", encoding = "UTF-8")
-                      if(parametros_list[l] == "Viento"){
-                        names(CSV) <- unlist(strsplit(names(CSV), ","))[1:5]
-                      }else{
-                        names(CSV) <- unlist(strsplit(names(CSV), ","))[-1]
-                      }
-
-                    }, silent = T)
-                  })
-                }, silent = TRUE)
-                #In the event of an error or absence of data
-                if(is.null(CSV)| length(CSV) == 0){
-                  #auxliar date variables
-                  momento1 <- as.POSIXct(strptime(paste("01-01-", intervalo[m], "00:00:00", sep =""), format = "%d-%m-%Y %H:%M:%S"))
-                  momento2 <- as.POSIXct(strptime(paste("31-12-", intervalo[m], "23:00:00", sep =""), format = "%d-%m-%Y %H:%M:%S"))
-                  #Generate date column
-                  momento <- seq(momento1, momento2, by = "hour")
-                  #Generate cod column
-                  CodigoNacional <-rep("", length(momento))
-                  #Format data column
-                  momento <- format(momento, format = "%d-%m-%Y %H:%M:%S")
-                  #generate empty column
-                  if(parametros_list[l] == "Temperatura"){
-                    Ts_Valor<- rep("", length(momento))
-                    CSV <- data.frame(CodigoNacional, momento, Ts_Valor)
-                  }else if(parametros_list[l] == "PuntoRocio"){
-                    Td_Valor<- rep("", length(momento))
-                    CSV <- data.frame(CodigoNacional, momento, Td_Valor)
-                  }else if(parametros_list[l] == "Humedad"){
-                    HR_Valor<- rep("", length(momento))
-                    CSV <- data.frame(CodigoNacional, momento, HR_Valor)
-                  }else if(parametros_list[l] == "Viento"){
-                    dd_Valor<- rep("", length(momento))
-                    ff_Valor<- rep("", length(momento))
-                    VRB_Valor<- rep("", length(momento))
-                    CSV <- data.frame(CodigoNacional, momento, dd_Valor,ff_Valor, VRB_Valor)
-                  }else if(parametros_list[l] == "PresionQFE"){
-                    QFE_Valor<- rep("", length(momento))
-                    CSV <- data.frame(CodigoNacional, momento, QFE_Valor)
-                  }else if(parametros_list[l] == "PresionQFF"){
-                    QFF_Valor<- rep("", length(momento))
-                    CSV <- data.frame(CodigoNacional, momento, QFF_Valor)
-                  }
-                }
-                #join data column to station dataframe
-                df<- rbind(df, CSV)
-                #If the files exist delete them
-                suppressWarnings({
-                  file.remove(csvname)
-                })
-                unlink(temp)
-              }
-
-              if(parametros_list[l] == "Viento"){
-                #If the parameter is wind, keep only columns 2, 3, 4 and 5 (with data)
-                df2 <- data.frame(df[2], df[3], df[4], df[5])
-              }else{
-                #If the parameter isn't wind, keep only columns 2 and 3(with data)
-                df2 <- data.frame(df[2], df[3])
-              }
-              #set auxiliary dataframe (df2) as data table
-              setDT(df2)
-              #Generate match between the donwloaded data and the partial dataframe
-              data <- data[df2, on = c("date" = "momento")]
-              #Clean df and df2
-              df   <- NULL
-              df2  <- NULL
-            }
+  
+  if(Estaciones[1] == "INFO") return(tablaEstaciones)
+  if(fin < inicio) stop("Verificar fechas de inicio y fin")
+  
+  col_idx <- if(Region) 7 else 1
+  estaciones_target <- tablaEstaciones[tablaEstaciones[, col_idx] %in% Estaciones, ]
+  
+  if(nrow(estaciones_target) == 0) stop("No se encontraron estaciones.")
+  
+  url_base <- "https://climatologia.meteochile.gob.cl/application/datos/getDatosSaclim/"
+  parametros_validos <- c("Temperatura", "PuntoRocio", "Humedad", "Viento", "PresionQFE", "PresionQFF")
+  params_to_fetch <- intersect(Parametros, parametros_validos)
+  
+  # Generamos secuencia de fechas maestra
+  start_date <- as.POSIXct(paste0(inicio, "-01-01 00:00:00"), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+  end_date   <- as.POSIXct(paste0(fin, "-12-31 23:00:00"), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+  date_seq   <- seq(start_date, end_date, by = "hour")
+  
+  lista_final <- list()
+  
+  # Directorio temporal para esta ejecución
+  temp_dir <- tempdir()
+  
+  for(j in 1:nrow(estaciones_target)){
+    
+    codigo_estacion <- estaciones_target[j, 1]
+    nombre_estacion <- estaciones_target[j, 4]
+    latitud         <- estaciones_target[j, 5]
+    longitud        <- estaciones_target[j, 6]
+    
+    dt_base <- data.table::data.table(
+      date_posix = date_seq,
+      Nombre = nombre_estacion,
+      Latitud = latitud,
+      Longitud = longitud,
+      key = "date_posix"
+    )
+    
+    for(param in params_to_fetch){
+      data_param_years <- list()
+      
+      for(year in inicio:fin){
+        url_query <- paste0(url_base, codigo_estacion, "_", year, "_", param, "_")
+        zip_file  <- tempfile(fileext = ".zip") # El zip ya se crea en temp
+        
+        tryCatch({
+          download.file(url_query, zip_file, mode = "wb", quiet = TRUE)
+          csv_name_internal <- paste0(codigo_estacion, "_", year, "_", param, "_.csv")
+          
+          # --- CAMBIO IMPORTANTE ---
+          # 1. Descomprimimos explícitamente en el directorio temporal (exdir = temp_dir)
+          # unzip devuelve la ruta completa del archivo extraído
+          extracted_csv <- unzip(zip_file, files = csv_name_internal, exdir = temp_dir)
+          
+          if(!is.null(extracted_csv) && length(extracted_csv) > 0){
+            dt_year <- tryCatch({
+              data.table::fread(extracted_csv, 
+                                sep = ";", dec = ".", encoding = "UTF-8", 
+                                header = TRUE, showProgress = FALSE)
+            }, error = function(e) NULL)
+            
+            # Eliminamos el CSV inmediatamente después de leerlo para no ocupar espacio
+            unlink(extracted_csv)
+          } else {
+            dt_year <- NULL
           }
-        }
-        #Join dataframes into a global dataframe
-        if(is.null(data_total)){
-          data_total<-data
-        }else{
-          data_total<-rbind(data_total, data)
+          
+          if(!is.null(dt_year) && nrow(dt_year) > 0){
+            
+            if(param == "Viento"){
+              dt_year <- dt_year[, c(2, 3, 4, 5), with = FALSE]
+              names(dt_year) <- c("momento", "dd_Valor", "ff_Valor", "VRB_Valor")
+            } else {
+              dt_year <- dt_year[, c(2, 3), with = FALSE]
+              names(dt_year) <- c("momento", param)
+            }
+            
+            dt_year[, date_posix := as.POSIXct(momento, format = "%Y-%m-%d %H:%M", tz = "UTC")]
+            
+            if(all(is.na(dt_year$date_posix))){
+              dt_year[, date_posix := as.POSIXct(momento, format = "%d-%m-%Y %H:%M:%S", tz = "UTC")]
+            }
+            
+            dt_year[, momento := NULL]
+            dt_year <- dt_year[!is.na(date_posix)]
+            
+            data_param_years[[paste(year)]] <- dt_year
+          }
+        }, error = function(e) {}, finally = { 
+          # Limpiamos el ZIP
+          if(file.exists(zip_file)) unlink(zip_file) 
+        })
+      } 
+      
+      if(length(data_param_years) > 0){
+        dt_param_full <- data.table::rbindlist(data_param_years)
+        dt_param_full <- unique(dt_param_full, by = "date_posix")
+        dt_base <- merge(dt_base, dt_param_full, by = "date_posix", all.x = TRUE)
+      } else {
+        if(param == "Viento"){
+          dt_base[, `:=`(dd_Valor = NA_real_, ff_Valor = NA_real_, VRB_Valor = NA_real_)]
+        } else {
+          dt_base[, (param) := NA_real_]
         }
       }
     }
+    lista_final[[j]] <- dt_base
   }
-
-  #format date column
-  data_total$date <- format(as.POSIXct(strptime(data_total$date, format = "%d-%m-%Y %H:%M:%S")), format = "%d/%m/%Y %H:%M")
-  #clean data without date records
-  data_total <- data_total[!(is.na(data_total$date)),]
-  #clean data without names station records
-  data_total <- data_total[!(is.na(data_total$Nombre)),]
-
-  #transform columns into numeric variables
-  for(i in 3:ncol(data_total)){
-    data_total[[i]]  <-  as.numeric(data_total[[i]])
-  }
-  #transform data table into a dataframe
-  data_total <- as.data.frame(data_total)
-  #Return dataframe
-  return(data_total)
+  
+  if(length(lista_final) == 0) return(NULL)
+  data_total <- data.table::rbindlist(lista_final)
+  
+  data_total[, date := format(date_posix, "%d/%m/%Y %H:%M")]
+  data_total[, date_posix := NULL] 
+  
+  setcolorder(data_total, c("date", "Nombre", "Latitud", "Longitud"))
+  
+  cols_to_numeric <- setdiff(names(data_total), c("date", "Nombre"))
+  suppressWarnings({
+    data_total[, (cols_to_numeric) := lapply(.SD, as.numeric), .SDcols = cols_to_numeric]
+  })
+  
+  return(as.data.frame(data_total))
 }

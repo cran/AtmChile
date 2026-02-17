@@ -670,31 +670,30 @@ ChileAirQuality <- function(Comunas = "INFO", Parametros, fechadeInicio, fechade
         
       }, silent = T)
     }
-    #transform columns into numeric variables
+    # Transform columns into numeric variables
+    # Obtenemos los nombres de las columnas para identificar cuales son de status (s.XXX)
+    col_names <- names(data_total)
+    
     if(!st){
+      # Si st es FALSE, convertimos todo desde la columna 3 (saltando date, site, longitude, latitude)
       for(i in 3:ncol(data_total)){
-        data_total[[i]] <- as.numeric(data_total[[i]])
+        # Usamos suppressWarnings para evitar alertas por los NAs introducidos (normal en datos vacíos)
+        suppressWarnings(data_total[[i]] <- as.numeric(data_total[[i]]))
       }
     }else{
+      # Si st es TRUE, discriminamos por el NOMBRE de la columna
       for(i in 3:ncol(data_total)){
-        val <- TRUE
-        j <- 1
-        while(val){
-          if(data_total[j, i] == ""| is.na(data_total[j, i])){
-            j <- j + 1
-            if(j > nrow(data_total)){
-              val <- FALSE
-            }
-          }
-          if(data_total[j, i] != "NV" & data_total[j, i] != "PV" & data_total[j, i] != "V"){
-            data_total[[i]] <- as.numeric(data_total[[i]])
-            val <- FALSE
-          }else{
-            val <- FALSE
-          }
+        # Verificamos si la columna empieza con "s." (ej: s.PM25, s.NOX)
+        es_status <- startsWith(col_names[i], "s.")
+        
+        # Solo convertimos a numérico si NO es una columna de status
+        if(!es_status){
+          suppressWarnings(data_total[[i]] <- as.numeric(data_total[[i]]))
         }
       }
     }
+    # --- FIN BLOQUE CORREGIDO ---
+    
     #print final success message
     print("Datos Capturados!")
     #return df global
